@@ -17,10 +17,32 @@
 // *******************************************************************
 
 %include "std_vector.i"
+%include "exception.i"
 
 %module extractor
 %{
 #include "extractor.h"
+static PyObject* pRunTimeException;
+%}
+
+%init %{
+    pRunTimeException = PyErr_NewException("_extractor.RunTimeException", NULL, NULL);
+    Py_INCREF(pRunTimeException);
+    PyModule_AddObject(m, "RunTimeException", pRunTimeException);
+%}
+
+%exception {
+    try {
+        $action
+    }
+    catch (const mutalyzer::RunTimeException & e) {
+        PyErr_SetString(pRunTimeException, const_cast<char*>(e.what()));
+        return NULL;
+    }
+}
+
+%pythoncode %{
+    RunTimeException = _extractor.RunTimeException
 %}
 
 namespace std

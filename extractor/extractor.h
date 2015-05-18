@@ -23,6 +23,7 @@
 #include <cstddef>
 #include <cstdlib>
 #include <vector>
+#include <stdexcept>
 
 
 #if defined(__debug__)
@@ -135,6 +136,17 @@ extern uint8_t frame_shift_map[128][128][128];
 // combinations of two amino acids (indexed by the lower 127 ASCII
 // characters). Used to calculate the frame shift probability.
 extern uint8_t frame_shift_count[128][128][5];
+
+// Exception raised when run time is exceeded.
+class RunTimeException: public std::exception {
+ public:
+    explicit RunTimeException(const char* inMessage);
+    virtual ~RunTimeException() throw() {}
+    virtual const char* what() const throw();
+    const char* message() const;
+ private:
+    const char* mMessage;
+};
 
 // *******************************************************************
 // Variant structure
@@ -707,4 +719,3 @@ size_t Dprint_truncated(char_t const* const string,
 } // mutalyzer
 
 #endif
-

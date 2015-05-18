@@ -9,7 +9,7 @@
 //   File:     extractor.cc (depends on extractor.h)
 //   Author:   Jonathan K. Vis
 //   Revision: 2.2.1
-//   Date:     2015/03/11
+//   Date:     2015/05/18
 // *******************************************************************
 // DESCRIPTION:
 //   This library can be used to generete HGVS variant descriptions as
@@ -17,6 +17,10 @@
 // *******************************************************************
 
 #include "extractor.h"
+
+#include <ctime>
+#include <stdexcept>
+
 
 namespace mutalyzer
 {
@@ -40,6 +44,22 @@ uint8_t frame_shift_map[128][128][128] = {{{FRAME_SHIFT_NONE}}};
 // characters). Used to calculate the frame shift probability.
 uint8_t frame_shift_count[128][128][5] = {{{0}}};
 
+double const MAX_TIME = .01;
+clock_t start_time;
+
+// Exception raised when run time is exceeded.
+RunTimeException::RunTimeException(const char* inMessage):
+    std::exception(),
+    mMessage(inMessage)
+{
+}
+const char* RunTimeException::what() const throw(){
+   return mMessage;
+}
+const char* RunTimeException::message() const {
+    return mMessage;
+}
+
 // Only used to interface to Python: calls the C++ extract function.
 Variant_List extract(char_t const* const reference,
                      size_t const        reference_length,
@@ -48,6 +68,7 @@ Variant_List extract(char_t const* const reference,
                      int const           type,
                      char_t const* const codon_string)
 {
+  start_time = clock();
   Variant_List variant_list;
   extract(variant_list.variants, reference, reference_length, sample, sample_length, type, codon_string);
   variant_list.weight_position = weight_position;
@@ -1072,6 +1093,10 @@ size_t LCS_k(std::vector<Substring> &substring,
   // previous rows). We count in k-mers.
   for (size_t i = 0; i < sample_length; ++i) // overlapping k-mers
   {
+    if (static_cast<double>(clock() - start_time) / static_cast<double>(CLOCKS_PER_SEC) > MAX_TIME)
+    {
+        throw RunTimeException("This took too long");
+    } // if
     for (size_t j = 0; j < reference_length; ++j) // non-overlapping
     {
       // A match
@@ -1606,4 +1631,3 @@ size_t Dprint_truncated(char_t const* const string,
 
 
 } // mutalyzer
-
